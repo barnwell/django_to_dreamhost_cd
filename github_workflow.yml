@@ -1,0 +1,42 @@
+name: Deploy Site to Staging
+on:
+  push:
+    branches:
+      - staging
+
+env:
+  ENVIRORMENT: 'staging'
+  PYTHON_VERSION: '3.10'
+  SSH_HOST: 'staging.mywebsite.com'
+  SSH_USER: 'username'
+  REMOTE_DIRECTORY: 'mywebsite_staging'
+
+jobs:
+  web-deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code Repository
+        uses: actions/checkout@v3
+
+      - name: Copy files to remote server
+        uses: garygrossgarten/github-action-scp@release
+        with:
+          local: .
+          remote: ${{ env.REMOTE_DIRECTORY }}
+          host: ${{ env.SSH_HOST }}
+          username: ${{ env.SSH_USER }}
+          privateKey: ${{ secrets.SSH_PRIVATE_KEY}}
+          rmRemote: true
+          concurrency: 10
+
+      - name: Exceute deployment script
+        uses: garygrossgarten/github-action-ssh@release
+        with:
+          command: |
+            cd ${{ env.REMOTE_DIRECTORY }}
+            chmod +x utility/install_django.sh
+            ./utility/install_django.sh
+          host: ${{ env.SSH_HOST }}
+          username: ${{ env.SSH_USER }}
+          privateKey: ${{ secrets.SSH_PRIVATE_KEY}}
